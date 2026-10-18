@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>⚓ Морской бой — онлайн на двоих</title>
+<meta name="description" content="Морской бой на двоих онлайн: создайте комнату, отправьте код другу и сражайтесь.">
+<meta name="theme-color" content="#041426">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⚓%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<canvas id="sea"></canvas>
+
+<div id="app">
+
+  <!-- ================= ПРИВЕТСТВИЕ ================= -->
+  <section class="screen show" id="scr-welcome">
+    <div class="card hero">
+      <div class="logo">⚓</div>
+      <h1>Морской бой</h1>
+      <p class="sub">Классическая игра на двоих — в браузере, с телефона или компьютера.</p>
+
+      <label class="fld">
+        <span>Ваше имя</span>
+        <input id="in-name" type="text" maxlength="16" placeholder="Например: Мама" autocomplete="nickname">
+      </label>
+
+      <button class="btn primary big" id="btn-create">Создать комнату</button>
+
+      <div class="divider"><span>или</span></div>
+
+      <div class="join-row">
+        <input id="in-code" type="text" maxlength="5" placeholder="КОД" autocomplete="off" autocapitalize="characters">
+        <button class="btn" id="btn-join">Войти</button>
+      </div>
+
+      <p class="hint">Как играть вдвоём: один создаёт комнату и отправляет код (или ссылку) второму. Оба расставляют корабли — и бой!</p>
+    </div>
+  </section>
+
+  <!-- ================= ЛОББИ / ИГРА ================= -->
+  <section class="screen" id="scr-game">
+
+    <header class="topbar">
+      <div class="brand">⚓ Морской бой</div>
+      <div class="room-chip" id="room-chip" hidden>
+        <span>Комната</span> <b id="room-code">—</b>
+        <button class="mini" id="btn-copy" title="Скопировать код">⧉</button>
+      </div>
+      <div class="spacer"></div>
+      <button class="mini icon" id="btn-sound" title="Звук">🔊</button>
+      <button class="mini icon" id="btn-leave" title="Выйти">✕</button>
+    </header>
+
+    <div class="players" id="players" hidden>
+      <div class="pl me"><div class="pname" id="p1name">Вы</div><div class="pstat" id="p1stat">—</div></div>
+      <div class="vs">VS</div>
+      <div class="pl foe"><div class="pname" id="p2name">Соперник</div><div class="pstat" id="p2stat">—</div></div>
+    </div>
+
+    <!-- ожидание второго игрока -->
+    <div class="card wait" id="wait-box" hidden>
+      <div class="spinner"></div>
+      <h2>Ждём второго игрока</h2>
+      <p>Отправьте другу код — или просто ссылку:</p>
+      <div class="bigcode" id="wait-code">—</div>
+      <div class="share-row">
+        <button class="btn primary" id="btn-copy-link">Скопировать ссылку</button>
+        <button class="btn ghost" id="btn-copy-code">Скопировать код</button>
+      </div>
+      <div class="qr-wrap"><img id="qr" alt="QR-код комнаты" width="132" height="132"></div>
+      <p class="hint small" id="copy-status">&nbsp;</p>
+    </div>
+
+    <!-- расстановка -->
+    <div class="card place-box" id="place-box" hidden>
+      <div class="place-head">
+        <h2 id="place-title">Расставьте флот</h2>
+        <div class="place-sub" id="place-sub">Выберите корабль и коснитесь клетки</div>
+      </div>
+      <div class="tray" id="tray"></div>
+      <div class="place-actions">
+        <button class="btn ghost" id="btn-rotate">↻ Повернуть <kbd>R</kbd></button>
+        <button class="btn ghost" id="btn-auto">🎲 За меня</button>
+        <button class="btn ghost" id="btn-clear">🧹 Сброс</button>
+        <button class="btn primary" id="btn-ready" disabled>✔ Готово</button>
+      </div>
+      <div class="place-status" id="place-status"></div>
+    </div>
+
+    <!-- боевые поля -->
+    <div class="boards" id="boards" hidden>
+      <div class="board-wrap enemy">
+        <div class="board-title">Поле соперника <span id="my-score" class="score"></span></div>
+        <div class="board" id="board-foe" data-side="foe"></div>
+        <div class="hint small" id="turn-hint">Делайте выстрел</div>
+      </div>
+      <div class="board-wrap mine">
+        <div class="board-title">Ваш флот <span id="foe-score" class="score"></span></div>
+        <div class="board" id="board-mine" data-side="mine"></div>
+        <div class="hint small">Зелёная подсветка — вы под обстрелом</div>
+      </div>
+    </div>
+
+    <div class="panels" id="panels" hidden>
+      <div class="card fleets">
+        <div class="fleet-col">
+          <h3>Ваш флот</h3>
+          <div class="fleet-list" id="fleet-mine"></div>
+        </div>
+        <div class="fleet-col">
+          <h3>Флот соперника</h3>
+          <div class="fleet-list" id="fleet-foe"></div>
+        </div>
+      </div>
+
+      <div class="card logwrap">
+        <h3>Ход боя</h3>
+        <div class="log" id="log"></div>
+      </div>
+
+      <div class="card chatwrap">
+        <h3>Чат</h3>
+        <div class="chat" id="chat"></div>
+        <form class="chat-form" id="chat-form">
+          <input id="chat-in" type="text" maxlength="200" placeholder="Написать сопернику…" autocomplete="off">
+          <button class="btn primary" type="submit">➤</button>
+        </form>
+      </div>
+
+      <div class="timerbar" id="timerbar" hidden>
+        <div class="timerfill" id="timerfill"></div>
+        <span id="timertext">Ход</span>
+      </div>
+    </div>
+
+    <!-- конец игры -->
+    <div class="card end" id="end-box" hidden>
+      <div class="end-emoji" id="end-emoji">🏆</div>
+      <h2 id="end-title">Победа!</h2>
+      <p id="end-text"></p>
+      <div class="share-row">
+        <button class="btn primary big" id="btn-rematch">🔄 Реванш</button>
+        <button class="btn ghost" id="btn-exit">В меню</button>
+      </div>
+      <p class="hint small" id="rematch-status">&nbsp;</p>
+    </div>
+  </section>
+</div>
+
+<div id="toast"></div>
+
+<script src="/qr.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>
